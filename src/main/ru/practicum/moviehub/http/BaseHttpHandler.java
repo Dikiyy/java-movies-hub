@@ -17,11 +17,9 @@ public abstract class BaseHttpHandler implements HttpHandler {
         ex.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         ex.sendResponseHeaders(statusCode, bytes.length);
 
-        OutputStream os = ex.getResponseBody();
-        os.write(bytes);
-        os.close();
-
-        ex.close();
+        try (OutputStream os = ex.getResponseBody()) {
+            os.write(bytes);
+        }
     }
 
     protected void sendNoContent(HttpExchange ex) throws IOException {

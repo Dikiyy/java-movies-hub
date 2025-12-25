@@ -23,12 +23,10 @@ public class MoviesStore {
     }
 
     public List<Movie> getByYear(int year) {
-        List<Movie> list = new ArrayList<>();
-        for (Movie m : movies.values()) {
-            if (m.getYear() == year) list.add(m);
-        }
-        list.sort(Comparator.comparingLong(Movie::getId));
-        return list;
+        return movies.values().stream()
+                .filter(m -> m.getYear() == year)
+                .sorted(Comparator.comparingLong(Movie::getId))
+                .toList();
     }
 
     public Movie getById(long id) {

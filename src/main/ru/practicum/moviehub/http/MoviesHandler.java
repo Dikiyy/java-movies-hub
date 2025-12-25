@@ -1,14 +1,13 @@
 package ru.practicum.moviehub.http;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,43 +96,24 @@ public class MoviesHandler extends BaseHttpHandler {
             return;
         }
 
-        String bodyText;
-        try {
-            bodyText = readBody(ex);
+        Movie incoming;
+        try (InputStreamReader isr = new InputStreamReader(ex.getRequestBody(), StandardCharsets.UTF_8)) {
+            incoming = gson.fromJson(isr, Movie.class);
+        } catch (com.google.gson.JsonParseException e) { // включает JsonSyntaxException и т.п.
+            sendJson(ex, 400, new ErrorResponse("Некорректный JSON."));
+            return;
         } catch (Exception e) {
+            sendJson(ex, 400, new ErrorResponse("Ошибка обработки запроса."));
+            return;
+        }
+
+        if (incoming == null) {
             sendJson(ex, 400, new ErrorResponse("Некорректный JSON."));
             return;
         }
 
-        JsonObject obj;
-        try {
-            JsonElement el = JsonParser.parseString(bodyText);
-            if (!el.isJsonObject()) {
-                sendJson(ex, 400, new ErrorResponse("Некорректный JSON."));
-                return;
-            }
-            obj = el.getAsJsonObject();
-        } catch (Exception e) {
-            sendJson(ex, 400, new ErrorResponse("Некорректный JSON."));
-            return;
-        }
-
-        String title = null;
-        Integer year = null;
-
-        try {
-            if (obj.has("title") && !obj.get("title").isJsonNull()) {
-                title = obj.get("title").getAsString();
-            }
-        } catch (Exception ignored) {
-        }
-
-        try {
-            if (obj.has("year") && !obj.get("year").isJsonNull()) {
-                year = obj.get("year").getAsInt();
-            }
-        } catch (Exception ignored) {
-        }
+        String title = incoming.getTitle();
+        int year = incoming.getYear();
 
         List<String> details = validate(title, year);
         if (!details.isEmpty()) {
@@ -144,6 +124,7 @@ public class MoviesHandler extends BaseHttpHandler {
         Movie created = store.add(title.trim(), year);
         sendJson(ex, 201, created);
     }
+
 
     private List<String> validate(String title, Integer year) {
         List<String> details = new ArrayList<>();

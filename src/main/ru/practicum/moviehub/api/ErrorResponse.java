@@ -4,11 +4,10 @@ import java.util.List;
 
 public class ErrorResponse {
     private final String error;
-    private final List<String> details; // может быть null
+    private final List<String> details;
 
     public ErrorResponse(String error) {
-        this.error = error;
-        this.details = null;
+        this(error, null);
     }
 
     public ErrorResponse(String error, List<String> details) {
